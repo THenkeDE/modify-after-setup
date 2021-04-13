@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module>
+  <id>modify-after-setup</id>
+  <name>Modify Subscription</name>
+  <description>Do some stuff after subscription-Setup</description>
+  <version>0.1</version>
+  <release>2</release>
+  <vendor>Timo Henke</vendor>
+  <url>https://well-done.com</url>
+  <plesk_min_version>18.0.34</plesk_min_version>
+</module>
