@@ -9,5 +9,14 @@
 		'form_basefoldername_label' => 'Ordner für Sitzungsdateien',
 		'form_basefoldername_placeholder' => '',
 		'form_seperatefolder_label' => 'Ordner pro Domain',
+		'tab_title_index' => 'Startseite',
+		'tab_title_config' => 'Konfiguration',
+		'tab_title_usage' => 'Nutzungsdaten',
+		'checktime_fmt' => 'd.m.Y, H:i:s',
+		'checktime_label' => 'Überprüfungszeitpunkt',
+		'domain_label' => 'Domainname',
+		'folder_label' => 'Ordner für Sitzungsdateien',
+		'index_teaser' => '<img src="%%icon%%" style="width:256px;height:256px;" /><br />',
+		'usage_teaser' => 'Da die Ermittlung (noch) sehr zeitintesiv sein kann, werden die Konfigurationen nur 1 x pro Minute aktualisiert.',
 	];
 

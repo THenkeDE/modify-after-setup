@@ -9,5 +9,14 @@
 		'form_basefoldername_label' => 'Sessionfolder',
 		'form_basefoldername_placeholder' => '',
 		'form_seperatefolder_label' => 'Use seperate folder',
+		'tab_title_index' => 'Home',
+		'tab_title_config' => 'Configuration',
+		'tab_title_usage' => 'Usage overview',
+                'checktime_fmt' => 'Y-m-d H:i:s',
+                'checktime_label' => 'Check',
+                'domain_label' => 'Domainname',
+                'folder_label' => 'Folder for sessionfiles',
+		'index_teaser' => '<img src="%%icon%%" style="width:256px;height:256px;" /><br />',
+		'usage_teaser' => 'Since the determination can still be very time-consuming, the configurations are only updated once per minute.',
 	];
 
