@@ -14,6 +14,10 @@ class Modules_ModifyAfterSetup_EventListener implements EventListener
 
 	public function handleEvent($objectType, $objectId, $action, $oldValues, $newValues)
 	{
+
+		$this->basefoldername = pm_Settings::get('basefoldername');
+		$this->seperatefolder = pm_Settings::get('seperatefolder') == '1' ? true : false;
+
 		switch( $action ) {
 			case 'subdomain_create' :
 			case 'site_create' :
@@ -27,7 +31,7 @@ class Modules_ModifyAfterSetup_EventListener implements EventListener
 	{
 		foreach( (pm_Domain::getAllDomains()) as $domainData ) {                       
 			if( $domainData->getName() == $newValues['Domain Name'] ){
-				$sessionFolder = $domainData->getHomePath() . '/.php_sessions_' . $newValues['Domain Name'];
+				$sessionFolder = $domainData->getHomePath() . '/' . $this->basefoldername . ( $this->seperatefolder === TRUE ? '_' . $newValues['Domain Name'] : '');
 				$fm = new pm_FileManager( $domainData->getId() );
 				if( !is_dir($sessionFolder) ){
 					$fm->mkdir($sessionFolder, '1750' );
@@ -40,7 +44,6 @@ class Modules_ModifyAfterSetup_EventListener implements EventListener
 			}
 		}
 	}
-
 }
 
 return new Modules_ModifyAfterSetup_EventListener();
