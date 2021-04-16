@@ -4,6 +4,8 @@ class IndexController extends pm_Controller_Action
 {
 
 	private $Meta = null;
+	private $basefoldername = null;
+	private $seperatefolder = null;
 
 	public function init()
 	{
@@ -29,7 +31,8 @@ class IndexController extends pm_Controller_Action
 			]
 		];
 		$this->view->tabs = $tabs;
-
+		$this->basefoldername = pm_Settings::get('basefoldername');
+		$this->seperatefolder = pm_Settings::get('seperatefolder') == '1' ? true : false;
 	}
 
 	public function indexAction()
@@ -52,45 +55,89 @@ class IndexController extends pm_Controller_Action
 		$this->_helper->json($list->fetchData());
 	}
 
-	private function _getUsageList()
+	public function enableAction()
 	{
-		$usage = ['folder' => [], 'domains' => [] ];
-
-		if( !isset($_SESSION[$this->Meta->id]) ){
-			$_SESSION[$this->Meta->id] = ['usage_ts' => 0, 'usage_data' => [] ];
-		}
-
-		if( $_SESSION[$this->Meta->id]['usage_ts'] + 60 < time() ){
-			foreach( (pm_Domain::getAllDomains()) as $domainData ){
-				$res = pm_ApiCli::call('site', ['--show-php-settings',$domainData->getName()]);
-				if( preg_match('/session\.save_path\s+\=\s+('.preg_quote($domainData->getHomePath(),'/').'(.+?))(;|\n|$)/si',$res['stdout'],$m ) ){
-					if( !isset($usage['folder'][$m[1]]) ){
-						$usage['folder'][$m[1]] = [];
+		if( $this->getRequest()->isGet() ){
+			if( ($domainId = $this->getRequest()->getParam('domain_id')) > 0 ){
+				foreach( (pm_Domain::getAllDomains()) as $domainData ){
+					if( $domainData->getId() == $domainId ){
+						$sessionFolder = $domainData->getHomePath() . '/' . $this->basefoldername . ( $this->seperatefolder === TRUE ? '_' . $domainData->getName() : '');
+						$fm = new pm_FileManager( $domainData->getId() );
+						if( !is_dir($sessionFolder) ){
+							$fm->mkdir($sessionFolder, '1750' );
+						}
+						$tmpfile = sys_get_temp_dir() . '/' . $domainData->getName() . '.ini';
+						$tmpcontent = 'session.save_path=' . $sessionFolder . '/' . "\n";
+						file_put_contents($tmpfile,$tmpcontent);
+						$res = pm_ApiCli::call('site', ['--update-php-settings',$domainData->getName(),'-settings',$tmpfile]);
+						unlink($tmpfile);
+						$this->_status->addMessage('info', $this->lmsg('sessionfolder_enabled',[
+							'folder' => $sessionFolder,
+							'domain' => $domainData->getName()
+						]));
+						unset($_SESSION[$this->Meta->id]);
 					}
-					$usage['folder'][$m[1]][] = $domainData->getName();
-					$usage['domains'][$domainData->getName()] = $m[1];
 				}
 			}
-			$_SESSION[$this->Meta->id]['usage_ts'] = time();
-			$_SESSION[$this->Meta->id]['usage_data'] = $usage;
-		} else {
-			$usage = $_SESSION[$this->Meta->id]['usage_data'];
 		}
+		$this->_redirect( pm_Context::getActionUrl('index/usage'), ['exit' => true, 'prependBase' => false ]);
+		return;
+	}
 
+
+	public function disableAction()
+	{
+		if( $this->getRequest()->isGet() ){
+			if( ($domainId = $this->getRequest()->getParam('domain_id')) > 0 ){
+				foreach( (pm_Domain::getAllDomains()) as $domainData ){
+					if( $domainData->getId() == $domainId ){
+						$tmpfile = sys_get_temp_dir() . '/' . $domainData->getName() . '.ini';
+						$tmpcontent = "session.save_path=;\n";
+						file_put_contents($tmpfile,$tmpcontent);
+						$res = pm_ApiCli::call('site', ['--update-php-settings',$domainData->getName(),'-settings',$tmpfile]);
+						unlink($tmpfile);
+						$this->_status->addMessage('info', $this->lmsg('sessionfolder_disabled',[
+							'folder' => $sessionFolder,
+							'domain' => $domainData->getName()
+						]));
+						unset($_SESSION[$this->Meta->id]);
+					}
+				}
+			}
+		}
+		$this->_redirect( pm_Context::getActionUrl('index/usage'), ['exit' => true, 'prependBase' => false ]);
+		return;
+	}
+
+	private function _getUsageList()
+	{
+		$usage = ['folder' => [], 'domains' => [], 'default' => [], 'ids' => [] ];
+		$_configs = $this->_getPhpConfigs(); // query XML API for PHP configurations
+		foreach( (pm_Domain::getAllDomains()) as $domainData ){
+			$usage['ids'][$domainData->getName()] = $domainData->getId();
+			if( isset($_configs[$domainData->getId()]) ){
+				if( !isset($usage['folder'][$_configs[$domainData->getId()]]) ){
+					$usage['folder'][$_configs[$domainData->getId()]] = [];
+				}
+				$usage['folder'][$_configs[$domainData->getId()]][] = $domainData->getName();
+				$usage['domains'][$domainData->getName()] = $_configs[$domainData->getId()];
+			} else {
+				$usage['domains'][$domainData->getName()] = false;
+				$usage['default'][$domainData->getName()] = true;
+			}
+		}
 		$options = [
 			'defaultSortField' => 'domain',
 			'defaultSortDirection' => pm_View_List_Simple::SORT_DIR_DOWN,
 		];
-
 		$data = [];
 		foreach( $usage['domains'] as $domain => $sessionFolder ){
 			$data[] = [
-				'domain' => $domain,
-				'sessionfolder' => $sessionFolder,
-				'checktime' => date($this->lmsg('checktime_fmt'),$_SESSION[$this->Meta->id]['usage_ts'])
+				'domain'	=> $domain,
+				'sessionfolder'	=> $sessionFolder != FALSE ? $sessionFolder : $this->lmsg('system_default_label'),
+				'own'		=> isset($usage['default'][$domain]) ? $this->_actionButton('on', pm_Context::getActionUrl('index','enable') . '?domain_id='.$usage['ids'][$domain]) : $this->_actionButton('off', pm_Context::getActionUrl('index','disable') . '?domain_id='.$usage['ids'][$domain] )
 			];
 		}
-
 		$list = new pm_View_List_Simple($this->view, $this->_request, $options);
 		$list->setData($data);
 		$list->setColumns([
@@ -106,16 +153,25 @@ class IndexController extends pm_Controller_Action
 				'sortable' => true,
 				'searchable' => true,
 			],
-			'checktime' => [
-				'title' => $this->lmsg('checktime_label'),
+			'own' => [
+				'title' => $this->lmsg('own_folder_label'),
 				'noEscape' => true,
 				'sortable' => true,
 				'searchable' => false,
 			],
 		]);
-
 		$list->setDataUrl(['action' => 'list-usage']);
 		return $list;
+	}
+
+	private function _actionButton( $mode = 'on', $url )
+	{
+		return $this->lmsg('button_template',[
+			'mode'	=> $mode == 'off' ? 'restart' : 'add',
+			'url'	=> $url,
+			'msg'	=> $this->lmsg('button_'.($mode == 'off' ? 'activate' : 'deactivate').'_tooltip'),
+			'text'	=> $this->lmsg('button_'.($mode == 'off' ? 'activate' : 'deactivate').'_label')
+		]);
 	}
 
 	public function configAction()
@@ -149,6 +205,22 @@ class IndexController extends pm_Controller_Action
 		}
 
 		$this->view->form = $form;
+	}
+
+	private function _getPhpConfigs()
+	{
+		$_configs = [];
+		$request = '<site><get><filter/><dataset><hosting/></dataset></get></site>';
+		foreach( pm_ApiRpc::getService()->call($request)->site->get->result as $row ){
+			if( isset($row->data->hosting->vrt_hst) ){
+				foreach( $row->data->hosting->vrt_hst->property as $property ){
+					if( $property->name == 'session.save_path' ){
+						$_configs[(double)$row->id] = (string)$property->value;
+					}
+				}
+			}
+		}
+		return $_configs;
 	}
 
 	public function loadMetaXml() : object
