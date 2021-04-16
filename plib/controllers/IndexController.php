@@ -111,7 +111,7 @@ class IndexController extends pm_Controller_Action
 
 	private function _getUsageList()
 	{
-		$usage = ['folder' => [], 'domains' => [], 'default' => [], 'ids' => [] ];
+		$usage = ['folder' => [], 'domains' => [], 'default' => [], 'ids' => [], 'content' => [] ];
 		$_configs = $this->_getPhpConfigs(); // query XML API for PHP configurations
 		foreach( (pm_Domain::getAllDomains()) as $domainData ){
 			$usage['ids'][$domainData->getName()] = $domainData->getId();
@@ -121,6 +121,14 @@ class IndexController extends pm_Controller_Action
 				}
 				$usage['folder'][$_configs[$domainData->getId()]][] = $domainData->getName();
 				$usage['domains'][$domainData->getName()] = $_configs[$domainData->getId()];
+
+				if( !isset($usage['content'][$_configs[$domainData->getId()]]) ){
+					$fm = new pm_FileManager( $domainData->getId() );
+					if( is_dir($_configs[$domainData->getId()]) ){
+						$usage['content'][$_configs[$domainData->getId()]] = count($fm->scanDir($_configs[$domainData->getId()], true, true));
+					}
+				}
+
 			} else {
 				$usage['domains'][$domainData->getName()] = false;
 				$usage['default'][$domainData->getName()] = true;
@@ -135,7 +143,8 @@ class IndexController extends pm_Controller_Action
 			$data[] = [
 				'domain'	=> $domain,
 				'sessionfolder'	=> $sessionFolder != FALSE ? $sessionFolder : $this->lmsg('system_default_label'),
-				'own'		=> isset($usage['default'][$domain]) ? $this->_actionButton('on', pm_Context::getActionUrl('index','enable') . '?domain_id='.$usage['ids'][$domain]) : $this->_actionButton('off', pm_Context::getActionUrl('index','disable') . '?domain_id='.$usage['ids'][$domain] )
+				'own'		=> isset($usage['default'][$domain]) ? $this->_actionButton('on', pm_Context::getActionUrl('index','enable') . '?domain_id='.$usage['ids'][$domain]) : $this->_actionButton('off', pm_Context::getActionUrl('index','disable') . '?domain_id='.$usage['ids'][$domain] ),
+				'filesinfolder'	=> $sessionFolder != FALSE ? (isset($usage['content'][$sessionFolder]) ? $usage['content'][$sessionFolder] : 0) : ''
 			];
 		}
 		$list = new pm_View_List_Simple($this->view, $this->_request, $options);
@@ -149,6 +158,13 @@ class IndexController extends pm_Controller_Action
 			],
 			'sessionfolder' => [
 				'title' => $this->lmsg('folder_label'),
+				'class' => 'xxx-yyy',
+				'noEscape' => true,
+				'sortable' => true,
+				'searchable' => true,
+			],
+			'filesinfolder' => [
+				'title' => $this->lmsg('files_label'),
 				'noEscape' => true,
 				'sortable' => true,
 				'searchable' => true,

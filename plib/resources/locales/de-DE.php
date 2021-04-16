@@ -26,6 +26,7 @@
 		'sessionfolder_enabled'			=> 'Der Ordner %%folder%% wurde für die PHP-Sitzungsdateien der Domain %%domain%% konfiguriert',
 		'sessionfolder_disabled'		=> 'Der Ordner für PHP-Sitzungsdateien auf der Domain %%domain%% wurde auf den Systemstandard zurückgesetzt',
 		'own_folder_label'			=> '',
+		'files_label'				=> 'Sitzungsdateien',
 		'system_default_label'			=> '<small class="pul-text--muted">PHP System-Standard</small>',
 
 	];

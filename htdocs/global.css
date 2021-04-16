@@ -1,0 +1,28 @@
+@media (min-width: 768px) {
+
+	#pm-list-modify-after-setup-table tbody tr:nth-child(even) td {
+		background-color: rgba(250,253,255,1);
+	}
+
+	#pm-list-modify-after-setup-table tbody tr:nth-child(even):hover td {
+		background-color: rgba(245,248,250,1);
+	}
+
+	#pm-list-modify-after-setup-table tbody tr:nth-child(odd) td {
+		background-color: rgba(255,255,255,1);
+	}
+
+	#pm-list-modify-after-setup-table tbody tr:nth-child(odd):hover td {
+		background-color: rgba(245,250,255,1);
+	}
+	
+	#pm-list-modify-after-setup-table thead tr th:nth-child(3),
+	#pm-list-modify-after-setup-table tbody tr td:nth-child(3) {
+		text-align: center;
+	}
+	#pm-list-modify-after-setup-table thead tr th:nth-child(4),
+	#pm-list-modify-after-setup-table tbody tr td:nth-child(4) {
+		text-align: right;
+	}
+
+}

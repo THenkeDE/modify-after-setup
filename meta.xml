@@ -4,7 +4,7 @@
   <name>Modify Subscription</name>
   <description>Do some stuff after subscription-Setup</description>
   <version>0.1</version>
-  <release>6</release>
+  <release>6a</release>
   <vendor>Timo Henke</vendor>
   <url>https://well-done.com</url>
   <plesk_min_version>18.0.34</plesk_min_version>
