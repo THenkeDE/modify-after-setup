@@ -14,16 +14,16 @@ class Modules_ModifyAfterSetup_EventListener implements EventListener
 
 	public function handleEvent($objectType, $objectId, $action, $oldValues, $newValues)
 	{
-
-		$this->basefoldername = pm_Settings::get('basefoldername');
-		$this->seperatefolder = pm_Settings::get('seperatefolder') == '1' ? true : false;
-
-		switch( $action ) {
-			case 'subdomain_create' :
-			case 'site_create' :
-			case 'domain_create' :
-				$this->default_create( $objectType, $objectId, $action, $oldValues, $newValues );
-				break;
+		if( TRUE === (pm_Settings::get('autoexecute') == '1' ? true : false) ){
+			$this->basefoldername = pm_Settings::get('basefoldername');
+			$this->seperatefolder = pm_Settings::get('seperatefolder') == '1' ? true : false;
+			switch( $action ) {
+				case 'subdomain_create' :
+				case 'site_create' :
+				case 'domain_create' :
+					$this->default_create( $objectType, $objectId, $action, $oldValues, $newValues );
+					break;
+			}
 		}
 	}
 
@@ -41,9 +41,16 @@ class Modules_ModifyAfterSetup_EventListener implements EventListener
 				file_put_contents($tmpfile,$tmpcontent);
 				$res = pm_ApiCli::call('site', ['--update-php-settings',$newValues['Domain Name'],'-settings',$tmpfile]);
 				unlink($tmpfile);
+				$this->panelLog( sprintf('Setting php sessionfolder on domain %s to %s',$newValues['Domain Name'],$sessionFolder) );
 			}
 		}
 	}
+
+	private function panelLog( $message = '' )
+	{
+		(pm_Bootstrap::getContainer()->get(Psr\Log\LoggerInterface::class))->error( $message );
+	}
+
 }
 
 return new Modules_ModifyAfterSetup_EventListener();

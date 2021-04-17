@@ -28,5 +28,6 @@
 		'own_folder_label'			=> '',
 		'files_label'				=> 'Session-Files',
 		'system_default_label'			=> '<small class="pul-text--muted">PHP System-Default</small>',
+		'autoexecute_label'			=> 'automatically set session folder on domain creation' 
 	];
 

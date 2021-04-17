@@ -1,11 +1,22 @@
 <?php
 
+if( !function_exists('pr') ){
+	function pr( $d ){
+		if( isset($_SERVER['SHELL']) && isset($_SERVER['TERM']) ){
+			echo print_r( $d, true );
+		} else {
+			echo "<pre><xmp>" . print_r( $d, true ) . "</xmp></pre>";
+		}
+	}
+}
+
 class IndexController extends pm_Controller_Action
 {
 
 	private $Meta = null;
 	private $basefoldername = null;
 	private $seperatefolder = null;
+	private $autoexecute = null;
 
 	public function init()
 	{
@@ -33,6 +44,7 @@ class IndexController extends pm_Controller_Action
 		$this->view->tabs = $tabs;
 		$this->basefoldername = pm_Settings::get('basefoldername');
 		$this->seperatefolder = pm_Settings::get('seperatefolder') == '1' ? true : false;
+		$this->autoexecute = pm_Settings::get('autoexecute') == '1' ? true : false;
 	}
 
 	public function indexAction()
@@ -197,14 +209,23 @@ class IndexController extends pm_Controller_Action
 			'label'		=> $this->lmsg('form_basefoldername_label'),
 			'placeholder'	=> $this->lmsg('form_basefoldername_placeholder'),
 			'escape'	=> false,
-			'value'		=> pm_Settings::get('basefoldername'),
+			'value'		=> $this->basefoldername,
+			'class'		=> 'f-large-size',
+			'style'		=> 'width: 100%'
+
 		]);
 		$form->addElement('select', 'seperatefolder', [
 			'label'		=> $this->lmsg('form_seperatefolder_label'),
 			'multiOptions'	=> ['1' => 'yes', '0' => 'no'],
-			'value'		=> pm_Settings::get('seperatefolder'),
+			'value'		=> $this->seperatefolder,
 			'required'	=> true,
 		]);
+
+		$form->addElement('checkbox', 'autoexecute', [
+			'label' => $this->lmsg('autoexecute_label'),
+			'value' => $this->autoexecute,
+		]);
+
 
 		$form->addControlButtons([
 			'sendTitle'	=> $this->lmsg('form_save_config'),
@@ -216,6 +237,7 @@ class IndexController extends pm_Controller_Action
 		if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
 			pm_Settings::set('basefoldername', $form->getValue('basefoldername'));
 			pm_Settings::set('seperatefolder', $form->getValue('seperatefolder') );
+			pm_Settings::set('autoexecute', $form->getValue('autoexecute') );
 			$this->_status->addMessage('info', $this->lmsg('form_save_success'));
 			$this->_helper->json(['redirect' => pm_Context::getActionUrl('index/config')]); 
 		}
@@ -226,12 +248,14 @@ class IndexController extends pm_Controller_Action
 	private function _getPhpConfigs()
 	{
 		$_configs = [];
-		$request = '<site><get><filter/><dataset><hosting/></dataset></get></site>';
-		foreach( pm_ApiRpc::getService()->call($request)->site->get->result as $row ){
-			if( isset($row->data->hosting->vrt_hst) ){
-				foreach( $row->data->hosting->vrt_hst->property as $property ){
-					if( $property->name == 'session.save_path' ){
-						$_configs[(double)$row->id] = (string)$property->value;
+		foreach( ['webspace','site'] as $service ){
+			$request = sprintf('<%1$s><get><filter/><dataset><hosting/></dataset></get></%1$s>',$service);
+			foreach( pm_ApiRpc::getService()->call($request)->{$service}->get->result as $row ){
+				if( isset($row->data->hosting->vrt_hst) ){
+					foreach( $row->data->hosting->vrt_hst->property as $property ){
+						if( $property->name == 'session.save_path' ){
+							$_configs[(double)$row->id] = (string)$property->value;
+						}
 					}
 				}
 			}

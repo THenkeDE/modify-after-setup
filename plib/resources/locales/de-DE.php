@@ -28,5 +28,6 @@
 		'own_folder_label'			=> '',
 		'files_label'				=> 'Sitzungsdateien',
 		'system_default_label'			=> '<small class="pul-text--muted">PHP System-Standard</small>',
+		'autoexecute_label'			=> 'Automatische Ausführung bei Domainerstellung'
 
 	];
